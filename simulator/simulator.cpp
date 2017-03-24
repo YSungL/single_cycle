@@ -6,6 +6,7 @@
 #include <bitset>
 #include <sstream>
 #include <math.h>
+#include <fstream>
 using namespace std;
 vector<long long> reg;
 vector<string >d_mem;
@@ -19,6 +20,8 @@ int lock = 0;
 int jal_mark = 0;
 int safe_H = 0;//use for mult
 int safe_L = 0;
+int cycle = 0;
+ofstream fout1 , fout2;
 long long convert_dex(string str_bin)
 {
     int str_size = str_bin.size();
@@ -188,23 +191,24 @@ int ins_add(char *rs , char *rt , char *rd) // sign +-
     long long temp = reg[t3];
     reg[t3] = reg[t1] + reg[t2];
     if(t3 == 0){
-        cout << "Write $0 Error" << endl;
+        fout2 << "In cycle " << cycle << ": " << "Write $0 Error" << endl;
         reg[t3] = 0;
     }
-
-    if(reg[t3] > max_sign || reg[t3] < min_sign )
+    //fout1 << reg[t3] << endl;
+    //system("PAUSE");
+    if(int32_t(reg[t3]) > max_sign || int32_t(reg[t3]) < int32_t(min_sign) )
     {
-        cout << "Number Overflow" << endl;
+        fout2 << "In cycle " << cycle << ": " << "Number Overflow" << endl;
     }
 
     if(reg[t3] != temp){
         if(t3 < 10)
-            cout << "$0" <<t3 << ": " << convert_hex(reg[t3]) << endl;
+            fout1 << "$0" <<t3 << ": " << convert_hex(reg[t3]) << endl;
         else
-            cout << "$" << t3 << ": " << convert_hex(reg[t3]) << endl;
+            fout1 << "$" << t3 << ": " << convert_hex(reg[t3]) << endl;
     }
     reg[34] = reg[34] + 4;
-    cout << "PC: " << convert_hex(reg[34]) << endl;
+    fout1 << "PC: " << convert_hex(reg[34]) << endl;
     return 0;
 
 }
@@ -213,17 +217,30 @@ int ins_addu(char *rs , char *rt , char *rd)
     int t1 = convert_dex(rs);
     int t2 = convert_dex(rt);
     int t3 = convert_dex(rd);
-    long long temp = reg[t3];
-    reg[t3] = reg[t1] + reg[t2];
-    if(t3 == 0){
-        cout << "Write $0 Error" << endl;
-        reg[t3] = 0;
-    }
-    if(reg[t3] < 0) // convert to positive number
+    unsigned long long temp = reg[t3];
+    unsigned int temp_num_1 = 0;
+    unsigned int temp_num_2 = 0;
+    if(reg[t1] < 0 && reg[t2] >0)
     {
-        unsigned long long  j = (unsigned long long ) reg[t3];
-        j = j & max_unsign;
-        reg[t3] = j;
+        temp_num_1 = reg[t1]& max_unsign;
+        reg[t3] = temp_num_1 + reg[t2];
+    }
+    else if (reg[t1] > 0 && reg[t2] < 0)
+    {
+        temp_num_2 = reg[t2]& max_unsign;
+        reg[t3] = temp_num_2 + reg[t1];
+    }
+    else if(reg[t1] < 0 && reg[t2] < 0)
+    {
+        temp_num_1 = reg[t1]& max_unsign;
+        temp_num_2 = reg[t2]& max_unsign;
+        reg[t3] = temp_num_1 + temp_num_2;
+    }
+    else
+        reg[t3] = reg[t1] + reg[t2];
+    if(t3 == 0){
+        fout2 << "In cycle " << cycle << ": " << "Write $0 Error" << endl;
+        reg[t3] = 0;
     }
     if(reg[t3] > max_unsign)
     {
@@ -231,12 +248,12 @@ int ins_addu(char *rs , char *rt , char *rd)
     }
     if(reg[t3] != temp){
         if(t3 < 10)
-            cout << "$0" <<t3 << ": " << convert_hex(reg[t3]) << endl;
+            fout1 << "$0" <<t3 << ": " << convert_hex(reg[t3]) << endl;
         else
-            cout << "$" <<t3 << ": " << convert_hex(reg[t3]) << endl;
+            fout1 << "$" <<t3 << ": " << convert_hex(reg[t3]) << endl;
     }
     reg[34] = reg[34] + 4;
-    cout << "PC: " << convert_hex(reg[34]) << endl;
+    fout1 << "PC: " << convert_hex(reg[34]) << endl;
     return 0;
 }
 int ins_sub(char *rs , char *rt , char *rd)// sign +-
@@ -247,22 +264,22 @@ int ins_sub(char *rs , char *rt , char *rd)// sign +-
     long long temp = reg[t3];
     reg[t3] = reg[t1] - reg[t2];
     if(t3 == 0){
-        cout << "Write $0 Error" << endl;
+        fout2 << "In cycle " << cycle << ": " << "Write $0 Error" << endl;
         reg[t3] = 0;
     }
-    if(reg[t3] > max_sign || reg[t3] < min_sign )
+    if(int32_t(reg[t3]) > max_sign || int32_t(reg[t3]) < int32_t(min_sign))
     {
-        cout << "Number Overflow" << endl;
+        fout2 << "In cycle " << cycle << ": " << "Number Overflow" << endl;
         return 0;
     }
     if(reg[t3] != temp){
         if(t3 < 10)
-            cout << "$0" <<t3 << ": " << convert_hex(reg[t3]) << endl;
+            fout1 << "$0" <<t3 << ": " << convert_hex(reg[t3]) << endl;
         else
-            cout << "$"<<t3 << ": " << convert_hex(reg[t3]) << endl;
+            fout1 << "$"<<t3 << ": " << convert_hex(reg[t3]) << endl;
     }
     reg[34] = reg[34] + 4;
-    cout << "PC: " << convert_hex(reg[34]) << endl;
+    fout1 << "PC: " << convert_hex(reg[34]) << endl;
     return 0;
 }
 int ins_and(char *rs , char *rt , char *rd)// sign +-
@@ -273,17 +290,17 @@ int ins_and(char *rs , char *rt , char *rd)// sign +-
     long long temp = reg[t3];
     reg[t3] = reg[t1] & reg[t2];
     if(t3 == 0){
-        cout << "Write $0 Error" << endl;
+        fout2 << "In cycle " << cycle << ": " << "Write $0 Error" << endl;
         reg[t3] = 0;
     }
     if(reg[t3] != temp){
         if(t3 < 10)
-            cout << "$0" <<t3 << ": " << convert_hex(reg[t3]) << endl;
+            fout1 << "$0" <<t3 << ": " << convert_hex(reg[t3]) << endl;
         else
-            cout << "$"<<t3 << ": " << convert_hex(reg[t3]) << endl;
+            fout1 << "$"<<t3 << ": " << convert_hex(reg[t3]) << endl;
     }
     reg[34] = reg[34] + 4;
-    cout << "PC: " << convert_hex(reg[34]) << endl;
+    fout1 << "PC: " << convert_hex(reg[34]) << endl;
     return 0;
 }
 int ins_or(char *rs , char *rt , char *rd)// sign +-
@@ -294,17 +311,17 @@ int ins_or(char *rs , char *rt , char *rd)// sign +-
     long long temp = reg[t3];
     reg[t3] = reg[t1] | reg[t2];
     if(t3 == 0){
-        cout << "Write $0 Error" << endl;
+        fout2 << "In cycle " << cycle << ": " << "Write $0 Error" << endl;
         reg[t3] = 0;
     }
     if(reg[t3] != temp){
         if(t3 < 10)
-            cout << "$0" <<t3 << ": " << convert_hex(reg[t3]) << endl;
+            fout1 << "$0" <<t3 << ": " << convert_hex(reg[t3]) << endl;
         else
-            cout << "$"<<t3 << ": " << convert_hex(reg[t3]) << endl;
+            fout1 << "$"<<t3 << ": " << convert_hex(reg[t3]) << endl;
     }
     reg[34] = reg[34] + 4;
-    cout << "PC: " << convert_hex(reg[34]) << endl;
+    fout1 << "PC: " << convert_hex(reg[34]) << endl;
     return 0;
 }
 int ins_xor(char *rs , char *rt , char *rd)// sign +-
@@ -315,17 +332,17 @@ int ins_xor(char *rs , char *rt , char *rd)// sign +-
     long long temp = reg[t3];
     reg[t3] = reg[t1] ^ reg[t2];
     if(t3 == 0){
-        cout << "Write $0 Error" << endl;
+        fout2 << "In cycle " << cycle << ": " << "Write $0 Error" << endl;
         reg[t3] = 0;
     }
     if(reg[t3] != temp){
         if(t3 < 10)
-            cout << "$0" <<t3 << ": " << convert_hex(reg[t3]) << endl;
+            fout1 << "$0" <<t3 << ": " << convert_hex(reg[t3]) << endl;
         else
-            cout << "$"<<t3 << ": " << convert_hex(reg[t3]) << endl;
+            fout1 << "$"<<t3 << ": " << convert_hex(reg[t3]) << endl;
     }
     reg[34] = reg[34] + 4;
-    cout << "PC: " << convert_hex(reg[34]) << endl;
+    fout1 << "PC: " << convert_hex(reg[34]) << endl;
     return 0;
 }
 int ins_nor(char *rs , char *rt , char *rd)// sign +-
@@ -336,17 +353,17 @@ int ins_nor(char *rs , char *rt , char *rd)// sign +-
     long long temp = reg[t3];
     reg[t3] = ~(reg[t1] | reg[t2]);
     if(t3 == 0){
-        cout << "Write $0 Error" << endl;
+        fout2 << "In cycle " << cycle << ": " << "Write $0 Error" << endl;
         reg[t3] = 0;
     }
     if(reg[t3] != temp){
         if(t3 < 10)
-            cout << "$0" <<t3 << ": " << convert_hex(reg[t3]) << endl;
+            fout1 << "$0" <<t3 << ": " << convert_hex(reg[t3]) << endl;
         else
-            cout << "$"<<t3 << ": " << convert_hex(reg[t3]) << endl;
+            fout1 << "$"<<t3 << ": " << convert_hex(reg[t3]) << endl;
     }
     reg[34] = reg[34] + 4;
-    cout << "PC: " << convert_hex(reg[34]) << endl;
+    fout1 << "PC: " << convert_hex(reg[34]) << endl;
     return 0;
 }
 int ins_nand(char *rs , char *rt , char *rd)// sign +-
@@ -357,17 +374,17 @@ int ins_nand(char *rs , char *rt , char *rd)// sign +-
     long long temp = reg[t3];
     reg[t3] = ~(reg[t1] & reg[t2]);
     if(t3 == 0){
-        cout << "Write $0 Error" << endl;
+        fout2 << "In cycle " << cycle << ": " << "Write $0 Error" << endl;
         reg[t3] = 0;
     }
     if(reg[t3] != temp){
         if(t3 < 10)
-            cout << "$0" <<t3 << ": " << convert_hex(reg[t3]) << endl;
+            fout1 << "$0" <<t3 << ": " << convert_hex(reg[t3]) << endl;
         else
-            cout << "$"<<t3 << ": " << convert_hex(reg[t3]) << endl;
+            fout1 << "$"<<t3 << ": " << convert_hex(reg[t3]) << endl;
     }
     reg[34] = reg[34] + 4;
-    cout << "PC: " << convert_hex(reg[34]) << endl;
+    fout1 << "PC: " << convert_hex(reg[34]) << endl;
     return 0;
 }
 int ins_slt(char *rs , char *rt , char *rd)// sign +-
@@ -381,17 +398,17 @@ int ins_slt(char *rs , char *rt , char *rd)// sign +-
     else
         reg[t3] = 0;
     if(t3 == 0){
-        cout << "Write $0 Error" << endl;
+        fout2 << "In cycle " << cycle << ": " << "Write $0 Error" << endl;
         reg[t3] = 0;
     }
     if(reg[t3] != temp){
         if(t3 < 10)
-            cout << "$0" <<t3 << ": " << convert_hex(reg[t3]) << endl;
+            fout1 << "$0" <<t3 << ": " << convert_hex(reg[t3]) << endl;
         else
-            cout << "$"<<t3 << ": " << convert_hex(reg[t3]) << endl;
+            fout1 << "$"<<t3 << ": " << convert_hex(reg[t3]) << endl;
     }
     reg[34] = reg[34] + 4;
-    cout << "PC: " << convert_hex(reg[34]) << endl;
+    fout1 << "PC: " << convert_hex(reg[34]) << endl;
     return 0;
 }
 int ins_sll(char *rt , char *rd , char *shamt)//+ ~ -
@@ -401,20 +418,20 @@ int ins_sll(char *rt , char *rd , char *shamt)//+ ~ -
     int t3 = convert_dex(shamt);
     long long temp = reg[t2];
     reg[t2] = reg[t1] << t3;
-    if(reg[t2] > max_sign || reg[t2] < min_sign)
+    if(int32_t(reg[t2]) > max_sign || int32_t(reg[t2]) < int32_t(min_sign))
     {
-        cout << "Number Overflow" << endl;
+        fout2 << "In cycle " << cycle << ": " << "Number Overflow" << endl;
         return 0;
     }
 
     if(reg[t2] != temp){
         if(t2 < 10)
-            cout << "$0" << t2 << ": " << convert_hex(reg[t2]) << endl;
+            fout1 << "$0" << t2 << ": " << convert_hex(reg[t2]) << endl;
         else
-            cout << "$"<<t2 << ": " << convert_hex(reg[t2]) << endl;
+            fout1 << "$"<<t2 << ": " << convert_hex(reg[t2]) << endl;
     }
     reg[34] = reg[34] + 4;
-    cout << "PC: " << convert_hex(reg[34]) << endl;
+    fout1 << "PC: " << convert_hex(reg[34]) << endl;
     return 0;
 }
 
@@ -433,17 +450,17 @@ int ins_srl(char *rt , char *rd , char *shamt)//+ ~ -
     else
         reg[t2] = reg[t1] >> t3;
     if(t2 == 0){
-        cout << "Write $0 Error" << endl;
+        fout2 << "In cycle " << cycle << ": " << "Write $0 Error" << endl;
         reg[t3] = 0;
     }
     if(reg[t2] != temp){
         if(t2 < 10)
-            cout << "$0" << t2 << ": " << reg[t2] << endl;
+            fout1 << "$0" << t2 << ": " << reg[t2] << endl;
         else
-            cout << "$" << t2 << ": " << reg[t2] << endl;
+            fout1 << "$" << t2 << ": " << reg[t2] << endl;
     }
     reg[34] = reg[34] + 4;
-    cout << convert_hex(reg[34]) << endl;
+    fout1 << convert_hex(reg[34]) << endl;
     return 0;
 }
 
@@ -455,31 +472,36 @@ int ins_sra(char *rt , char *rd , char *shamt)//+~- sign extend
     long long temp = reg[t2];
     reg[t2] = reg[t1] >> t3;
     if(t2 == 0){
-        cout << "Write $0 Error" << endl;
+        fout2 << "In cycle " << cycle << ": " << "Write $0 Error" << endl;
         reg[t2] = 0;
     }
-    if(reg[t2] > max_sign || reg[t2] < min_sign)
+    if(int32_t(reg[t2]) > max_sign || int32_t(reg[t2]) < int32_t(min_sign))
     {
-        cout << "Number Overflow" << endl;
+        fout2 << "In cycle " << cycle << ": " << "Number Overflow" << endl;
         return 0;
     }
     if(reg[t2] != temp){
         if(t2 < 10)
-            cout << "$0" << t2 << ": " << convert_hex(reg[t2]) << endl;
+            fout1 << "$0" << t2 << ": " << convert_hex(reg[t2]) << endl;
         else
-            cout << "$"<<t2 << ": " << convert_hex(reg[t2]) << endl;
+            fout1 << "$"<<t2 << ": " << convert_hex(reg[t2]) << endl;
     }
     reg[34] = reg[34] + 4;
-    cout << convert_hex(reg[34]) << endl;
+    fout1 << convert_hex(reg[34]) << endl;
     return 0;
 }
 
 int ins_jr(char *rs)
 {
     int t1 = convert_dex(rs);
-    reg[34] = t1;
-    cout << "PC: " << convert_hex(reg[34]) << endl;
-    return 0;
+    int temp_add;
+    temp_add = reg[34];
+    temp_add = (temp_add-reg[t1])/4;
+    reg[34] = reg[t1];
+    //fout1 << "temp_add = " << temp_add << endl;
+    fout1 << "PC: " << convert_hex(reg[34]) << endl;
+    //system("PAUSE");
+    return temp_add;
 }
 
 int ins_mult(char *rs , char *rt)
@@ -488,72 +510,116 @@ int ins_mult(char *rs , char *rt)
     long long temp = 0;
     int t1 = convert_dex(rs);
     int t2 = convert_dex(rt);
-    result = reg[t1] * reg[t2];
+    long long temp_HI = reg[32];
+    long long temp_LO = reg[33];
+    result = int32_t(reg[t1]) * int32_t(reg[t2]);
+    //fout1 << result << endl;
+    //system("PAUSE");
     if(result < 0)
         result = result & mult_unsign;
     reg[32] = result/pow(2,31);
     temp = reg[32] * pow(2,31);
     reg[33] = result - temp;
-    if(reg[32] > max_unsign || reg[33] > max_unsign)
-        cout << "Number Overflow" << endl;
+    if(int32_t(reg[32]) > max_unsign || int32_t(reg[33]) > max_unsign)
+        fout2 << "In cycle " << cycle << ": " << "Number Overflow" << endl;
     if(safe_H == 1 || safe_L == 1)
     {
-        cout << "Overwrite HI-LO registers" << endl;
+        fout2 << "In cycle " << cycle << ": " << "Overwrite HI-LO registers" << endl;
     }
-    cout << "$HI: " << convert_hex(reg[32]) << endl;
-    cout << "$LO: " << convert_hex(reg[33]) << endl;
+    if(reg[32] != temp_HI)
+        fout1 << "$HI: " << convert_hex(reg[32]) << endl;
+    if(reg[33] != temp_LO)
+        fout1 << "$LO: " << convert_hex(reg[33]) << endl;
     safe_H = 1;
     safe_L = 1;
     reg[34] = reg[34] + 4;
-    cout << "PC: " << convert_hex(reg[34]) << endl;
+    fout1 << "PC: " << convert_hex(reg[34]) << endl;
     return 0;
 
 }
 int ins_multu(char *rs , char *rt)
 {
-    long long result = 0;
-    long long temp = 0;
+    unsigned long long result = 0;
+    unsigned long long temp = 0;
     int t1 = convert_dex(rs);
     int t2 = convert_dex(rt);
-    if(reg[t1] < 0)
-        result = (reg[t1] &mult_sign) * reg[t2];
-    else if(reg[t2] < 0)
-        result = reg[t1] * (reg[t2] &mult_sign);
+    long long temp_HI = reg[32];
+    long long temp_LO = reg[33];
+    if(reg[t1] < 0 && reg[t2] > 0)
+    {
+        result = (reg[t1] &max_unsign) * reg[t2];
+    }
+
+    else if(reg[t2] < 0 && reg[t1] > 0)
+    {
+        result = reg[t1] * (reg[t2] &max_unsign);
+    }
+    else if(reg[t2] < 0 && reg[t1] < 0)
+        result = (reg[t1]&max_unsign) * (reg[t2]&max_unsign);
     else
         result = reg[t1] * reg[t2];
-    reg[32] = result/pow(2,31);
-    temp = reg[32] * pow(2,31);
-    reg[33] = result - temp;
-    if(reg[32] > max_unsign || reg[33] > max_unsign)
-        cout << "Number Overflow" << endl;
+    result = (result&mult_unsign);
+    reg[32] = result/pow(2,32);
+    if(reg[32] > max_unsign)
+        reg[32] = reg[32] & max_unsign;
+    temp = reg[32] * pow(2,32);
+    reg[33] = result - temp ;
+    if(int32_t(reg[32]) > max_unsign || int32_t(reg[33]) > (max_unsign))
+        fout2 << "In cycle " << cycle << ": " << "Number Overflow" << endl;
     if(safe_H == 1 || safe_L == 1)
     {
-        cout << "Overwrite HI-LO registers" << endl;
+        fout2 << "In cycle " << cycle << ": " << "Overwrite HI-LO registers" << endl;
     }
-    cout << "$HI: " << convert_hex(reg[32]) << endl;
-    cout << "$LO: " << convert_hex(reg[33]) << endl;
+     if(reg[32] != temp_HI)
+        fout1 << "$HI: " << convert_hex(reg[32]) << endl;
+    if(reg[33] != temp_LO)
+        fout1 << "$LO: " << convert_hex(reg[33]) << endl;
     safe_H = 1;
     safe_L = 1;
     reg[34] = reg[34] + 4;
-    cout << "PC: " << convert_hex(reg[34]) << endl;
+    fout1 << "PC: " << convert_hex(reg[34]) << endl;
     return 0;
 }
 int ins_mfhi(char *rd)
 {
     int t1 = convert_dex(rd);
+    long long temp = reg[t1];
     reg[t1] = reg[32];
     safe_H = 0;
     reg[34] = reg[34] + 4;
-    cout << "PC: " << convert_hex(reg[34]) << endl;
+    if(t1 == 0){
+        fout2 << "In cycle " << cycle << ": " << "Write $0 Error" << endl;
+        reg[t1] = 0;
+    }
+    if(temp != reg[t1])
+    {
+        if(t1 < 10)
+            fout1 << "$0" << t1 << ": " << convert_hex(reg[t1]) << endl;
+        else
+            fout1 << "$"<<t1 << ": " << convert_hex(reg[t1]) << endl;
+    }
+    fout1 << "PC: " << convert_hex(reg[34]) << endl;
     return 0;
 }
 int ins_mflo(char *rd)
 {
     int t1 = convert_dex(rd);
+    long long temp = reg[t1];
     reg[t1] = reg[33];
     safe_L = 0;
     reg[34] = reg[34] + 4;
-    cout << "PC: " << convert_hex(reg[34]) << endl;
+    if(t1 == 0){
+        fout2 << "In cycle " << cycle << ": " << "Write $0 Error" << endl;
+        reg[t1] = 0;
+    }
+    if(temp != reg[t1])
+    {
+        if(t1 < 10)
+            fout1 << "$0" << t1 << ": " << convert_hex(reg[t1]) << endl;
+        else
+            fout1 << "$"<<t1 << ": " << convert_hex(reg[t1]) << endl;
+    }
+    fout1 << "PC: " << convert_hex(reg[34]) << endl;
     return 0;
 }
 //*****************************************I Type
@@ -562,29 +628,37 @@ int ins_addi(char *rs , char *rt , int imm)
     int t1 = convert_dex(rs);
     int t2 = convert_dex(rt);
     int t3 = imm;
+    int temp_sign = 0;
     long long temp = reg[t2];
-    reg[t2] = reg[t1] + t3;
+    if(reg[t1] > max_sign)
+    {
+        temp_sign = int32_t(reg[t1]);
+        reg[t2] = temp_sign + t3;
+    }
+    else
+        reg[t2] = reg[t1] + t3;
     if(t2 == 0){
-        cout << "Write $0 Error" << endl;
+        fout2 << "In cycle " << cycle << ": " << "Write $0 Error" << endl;
         reg[t2] = 0;
     }
-    if(reg[t2] > max_sign || reg[t2] < min_sign )
+    if(reg[t2] > max_sign || int32_t(reg[t2]) < int32_t(min_sign))
     {
-        cout << "Number Overflow" << endl;
+        fout2 << "In cycle " << cycle << ": " << "Number Overflow" << endl;
     }
     if(reg[t2] != temp){
         if(t2 < 10)
-            cout << "$0" << t2 << ": " << convert_hex(reg[t2]) << endl;
+            fout1 << "$0" << t2 << ": " << convert_hex(reg[t2]) << endl;
         else
-            cout << "$"<<t2 << ": " << convert_hex(reg[t2]) << endl;
+            fout1 << "$"<<t2 << ": " << convert_hex(reg[t2]) << endl;
     }
     reg[34] = reg[34] + 4;
-    cout << "PC: " << convert_hex(reg[34]) << endl;
+    fout1 << "PC: " << convert_hex(reg[34]) << endl;
     return 0;
 
 }
 int ins_addiu(char *rs , char *rt , int imm)
 {
+
     int t1 = convert_dex(rs);
     int t2 = convert_dex(rt);
     int t3 = imm;
@@ -595,21 +669,27 @@ int ins_addiu(char *rs , char *rt , int imm)
     }
     reg[t2] = reg[t1] + t3;
     if(t2 == 0){
-        cout << "Write $0 Error" << endl;
+        fout2 << "In cycle " << cycle << ": " << "Write $0 Error" << endl;
         reg[t2] = 0;
     }
-    if(reg[t3] > max_unsign)
+    string ttemp = "";
+    ttemp = convert_bin(reg[t2]);
+    if(ttemp[16] == '1')
     {
-        reg[t3] = reg[t3] & max_unsign;
+        reg[t2] = reg[t2] | 4294901760;
+    }
+    if(reg[t2] > max_unsign)
+    {
+        reg[t2] = reg[t2] & max_unsign;
     }
     if(reg[t2] != temp){
         if(t2 < 10)
-            cout << "$0" << t2 << ": " << convert_hex(reg[t2]) << endl;
+            fout1 << "$0" << t2 << ": " << convert_hex(reg[t2]) << endl;
         else
-            cout << "$"<<t2 << ": " << convert_hex(reg[t2]) << endl;
+            fout1 << "$"<<t2 << ": " << convert_hex(reg[t2]) << endl;
     }
     reg[34] = reg[34] + 4;
-    cout << "PC: " << convert_hex(reg[34]) << endl;
+    fout1 << "PC: " << convert_hex(reg[34]) << endl;
     return 0;
 }
 int ins_lw(char *rs , char *rt , int imm)
@@ -630,7 +710,7 @@ int ins_lw(char *rs , char *rt , int imm)
         add_num = reg[t1]+(imm);
     if(add_num > 1024 || add_num < 0)
     {
-        cout << "Address Overflow" << endl;
+        fout2 << "In cycle " << cycle << ": " << "Address Overflow" << endl;
         close = 1;
     }
     int start_area = add_num/4;
@@ -641,25 +721,25 @@ int ins_lw(char *rs , char *rt , int imm)
         str_real += str_temp[i];
     reg[t2] = convert_dex(str_real);
     if(t2 == 0){
-        cout << "Write $0 Error" << endl;
+        fout2 << "In cycle " << cycle << ": " << "Write $0 Error" << endl;
         reg[t2] = 0;
     }
 
     if(imm % 4 != 0)
     {
-        cout << "Misalignment Error" << endl;
+        fout2 << "In cycle " << cycle << ": " << "Misalignment Error" << endl;
         close = 1;
     }
     if(close == 1)
         return -1;
     if(reg[t2] != temp){
         if(t2 < 10)
-            cout << "$0" << t2 << ": " << convert_hex(reg[t2]) << endl;
+            fout1 << "$0" << t2 << ": " << convert_hex(reg[t2]) << endl;
         else
-            cout << "$"<<t2 << ": " << convert_hex(reg[t2]) << endl;
+            fout1 << "$"<<t2 << ": " << convert_hex(reg[t2]) << endl;
     }
     reg[34] = reg[34] + 4;
-    cout << "PC: " << convert_hex(reg[34]) << endl;
+    fout1 << "PC: " << convert_hex(reg[34]) << endl;
     return 0;
 }
 int ins_lh(char *rs , char *rt , int imm)
@@ -680,7 +760,7 @@ int ins_lh(char *rs , char *rt , int imm)
         add_num = reg[t1]+(imm);
     if(add_num > 1024 || add_num < 0)
     {
-        cout << "Address Overflow" << endl;
+        fout2 << "In cycle " << cycle << ": " << "Address Overflow" << endl;
         close = 1;
     }
     int start_area = add_num/4;
@@ -690,7 +770,7 @@ int ins_lh(char *rs , char *rt , int imm)
     int count = 0;
     if(imm % 2 != 0)
     {
-        cout << "Misalignment Error" << endl;
+        fout2 << "In cycle " << cycle << ": " << "Misalignment Error" << endl;
         close = 1;
     }
     for(int i = (start_word*8) ; i < ((start_word*8)+16) ; i++)
@@ -724,19 +804,19 @@ int ins_lh(char *rs , char *rt , int imm)
     }
     reg[t2] = convert_dex(str_real);
     if(t2 == 0){
-        cout << "Write $0 Error" << endl;
+        fout2 << "In cycle " << cycle << ": " << "Write $0 Error" << endl;
         reg[t2] = 0;
     }
     if(close == 1)
         return -1;
     if(reg[t2] != temp){
         if(t2 < 10)
-            cout << "$0" << t2 << ": " << convert_hex(reg[t2]) << endl;
+            fout1 << "$0" << t2 << ": " << convert_hex(reg[t2]) << endl;
         else
-            cout << "$"<<t2 << ": " << convert_hex(reg[t2]) << endl;
+            fout1 << "$"<<t2 << ": " << convert_hex(reg[t2]) << endl;
     }
     reg[34] = reg[34] + 4;
-    cout << "PC: " << convert_hex(reg[34]) << endl;
+    fout1 << "PC: " << convert_hex(reg[34]) << endl;
     return 0;
 }
 int ins_lb(char *rs , char *rt , int imm)
@@ -745,7 +825,7 @@ int ins_lb(char *rs , char *rt , int imm)
     int t1 = convert_dex(rs);
     int t2 = convert_dex(rt);
     int t3 = imm;
-    //cout << "t3"<< t3 << endl;
+    //fout1 << "t3"<< t3 << endl;
     int add_num =0;
     int temp_sign=0;
     long long temp = reg[t2];
@@ -758,7 +838,7 @@ int ins_lb(char *rs , char *rt , int imm)
         add_num = reg[t1]+(imm);
     if(add_num > 1024 || add_num < 0)
     {
-        cout << "Address Overflow" << endl;
+        fout2 << "In cycle " << cycle << ": " << "Address Overflow" << endl;
         close = 1;
     }
     int start_area = add_num/4;
@@ -797,19 +877,19 @@ int ins_lb(char *rs , char *rt , int imm)
     }
     reg[t2] = convert_dex(str_real);
     if(t2 == 0){
-        cout << "Write $0 Error" << endl;
+        fout2 << "In cycle " << cycle << ": " << "Write $0 Error" << endl;
         reg[t2] = 0;
     }
     if(close == 1)
         return -1;
     if(reg[t2] != temp){
         if(t2 < 10)
-            cout << "$0" << t2 << ": " << convert_hex(reg[t2]) << endl;
+            fout1 << "$0" << t2 << ": " << convert_hex(reg[t2]) << endl;
         else
-            cout << "$"<<t2 << ": " << convert_hex(reg[t2]) << endl;
+            fout1 << "$"<<t2 << ": " << convert_hex(reg[t2]) << endl;
     }
     reg[34] = reg[34] + 4;
-    cout << "PC: " << convert_hex(reg[34]) << endl;
+    fout1 << "PC: " << convert_hex(reg[34]) << endl;
     return 0;
 }
 int ins_lhu(char *rs , char *rt , int imm)//+16-1(imm = 16 bits)
@@ -822,7 +902,7 @@ int ins_lhu(char *rs , char *rt , int imm)//+16-1(imm = 16 bits)
     int add_num = reg[t1] + imm;
     if(add_num > 1024 || add_num < 0)
     {
-        cout << "Address Overflow" << endl;
+        fout2 << "In cycle " << cycle << ": " << "Address Overflow" << endl;
         close = 1;
     }
     int start_area = add_num/4;
@@ -832,7 +912,7 @@ int ins_lhu(char *rs , char *rt , int imm)//+16-1(imm = 16 bits)
     int count = 0;
     if(imm % 2 != 0)
     {
-        cout << "Misalignment Error" << endl;
+        fout2 << "In cycle " << cycle << ": " << "Misalignment Error" << endl;
         close = 1;
     }
     for(int i = (start_word*8) ; i < ((start_word*8)+16) ; i++)
@@ -850,19 +930,19 @@ int ins_lhu(char *rs , char *rt , int imm)//+16-1(imm = 16 bits)
     }
     reg[t2] = convert_dex(str_real);
     if(t2 == 0){
-        cout << "Write $0 Error" << endl;
+        fout2 << "In cycle " << cycle << ": " << "Write $0 Error" << endl;
         reg[t2] = 0;
     }
     if(close == 1)
         return -1;
     if(reg[t2] != temp){
         if(t2 < 10)
-            cout << "$0" << t2 << ": " << convert_hex(reg[t2]) << endl;
+            fout1 << "$0" << t2 << ": " << convert_hex(reg[t2]) << endl;
         else
-            cout << "$"<<t2 << ": " << convert_hex(reg[t2]) << endl;
+            fout1 << "$"<<t2 << ": " << convert_hex(reg[t2]) << endl;
     }
     reg[34] = reg[34] + 4;
-    cout << "PC: " << convert_hex(reg[34]) << endl;
+    fout1 << "PC: " << convert_hex(reg[34]) << endl;
     return 0;
 }
 int ins_lbu(char *rs , char *rt , int imm)//+16-1(imm = 16 bits)
@@ -875,7 +955,7 @@ int ins_lbu(char *rs , char *rt , int imm)//+16-1(imm = 16 bits)
     int add_num = reg[t1] + imm;
     if(add_num > 1024 || add_num < 0)
     {
-        cout << "Address Overflow" << endl;
+        fout2 << "In cycle " << cycle << ": " << "Address Overflow" << endl;
         close = 1;
     }
     int start_area = add_num/4;
@@ -898,19 +978,19 @@ int ins_lbu(char *rs , char *rt , int imm)//+16-1(imm = 16 bits)
     }
     reg[t2] = convert_dex(str_real);
     if(t2 == 0){
-        cout << "Write $0 Error" << endl;
+        fout2 << "In cycle " << cycle << ": " << "Write $0 Error" << endl;
         reg[t2] = 0;
     }
     if(close == 1)
         return -1;
     if(reg[t2] != temp){
         if(t2 < 10)
-            cout << "$0" << t2 << ": " << convert_hex(reg[t2]) << endl;
+            fout1 << "$0" << t2 << ": " << convert_hex(reg[t2]) << endl;
         else
-            cout << "$"<<t2 << ": " << convert_hex(reg[t2]) << endl;
+            fout1 << "$"<<t2 << ": " << convert_hex(reg[t2]) << endl;
     }
     reg[34] = reg[34] + 4;
-    cout << "PC: " << convert_hex(reg[34]) << endl;
+    fout1 << "PC: " << convert_hex(reg[34]) << endl;
     return 0;
 }
 int ins_sw(char *rs , char *rt , int imm)
@@ -931,12 +1011,12 @@ int ins_sw(char *rs , char *rt , int imm)
         add_num = reg[t1]+(imm);
     if(add_num > 1024 || add_num < 0)
     {
-        cout << "Address Overflow" << endl;
+        fout2 << "In cycle " << cycle << ": " << "Address Overflow" << endl;
         close = 1;
     }
     if(imm % 4 != 0)
     {
-        cout << "Misalignment Error" << endl;
+        fout2 << "In cycle " << cycle << ": " << "Misalignment Error" << endl;
         close = 1;
     }
     int start_area = add_num/4;
@@ -944,7 +1024,7 @@ int ins_sw(char *rs , char *rt , int imm)
     if(close == 1)
         return -1;
     reg[34] = reg[34] + 4;
-    cout << "PC: " << convert_hex(reg[34]) << endl;
+    fout1 << "PC: " << convert_hex(reg[34]) << endl;
     return 0;
 }
 int ins_sh(char *rs , char *rt , int imm)
@@ -965,12 +1045,12 @@ int ins_sh(char *rs , char *rt , int imm)
         add_num = reg[t1]+(imm);
     if(add_num > 1024 || add_num < 0)
     {
-        cout << "Address Overflow" << endl;
+        fout2 << "In cycle " << cycle << ": " << "Address Overflow" << endl;
         close = 1;
     }
     if(imm % 2 != 0)
     {
-        cout << "Misalignment Error" << endl;
+        fout2 << "In cycle " << cycle << ": " << "Misalignment Error" << endl;
         close = 1;
     }
     if(close == 1)
@@ -994,7 +1074,7 @@ int ins_sh(char *rs , char *rt , int imm)
         d_mem[start_area+2] = convert_bin(temp_1+temp_2);
     }
     reg[34] = reg[34] + 4;
-    cout << "PC: " << convert_hex(reg[34]) << endl;
+    fout1 << "PC: " << convert_hex(reg[34]) << endl;
     return 0;
 }
 int ins_sb(char *rs , char *rt , int imm)
@@ -1015,7 +1095,7 @@ int ins_sb(char *rs , char *rt , int imm)
         add_num = reg[t1]+imm;
     if(add_num > 1024 || add_num < 0)
     {
-        cout << "Address Overflow" << endl;
+        fout2 << "In cycle " << cycle << ": " << "Address Overflow" << endl;
         close = 1;
     }
     if(close == 1)
@@ -1056,7 +1136,7 @@ int ins_sb(char *rs , char *rt , int imm)
         d_mem[start_area+2] = convert_bin(temp_1+temp_2);
     }
     reg[34] = reg[34] + 4;
-    cout << "PC: " << convert_hex(reg[34]) << endl;
+    fout1 << "PC: " << convert_hex(reg[34]) << endl;
     return 0;
 }
 int ins_lui( char *rt , int imm)
@@ -1065,17 +1145,17 @@ int ins_lui( char *rt , int imm)
     long long temp = reg[t2];
     reg[t2] = imm << 16;
     if(t2 == 0){
-        cout << "Write $0 Error" << endl;
+        fout2 << "In cycle " << cycle << ": " << "Write $0 Error" << endl;
         reg[t2] = 0;
     }
     if(reg[t2] != temp){
         if(t2 < 10)
-            cout << "$0" << t2 << ": " << convert_hex(reg[t2]) << endl;
+            fout1 << "$0" << t2 << ": " << convert_hex(reg[t2]) << endl;
         else
-            cout << "$"<<t2 << ": " << convert_hex(reg[t2]) << endl;
+            fout1 << "$"<<t2 << ": " << convert_hex(reg[t2]) << endl;
     }
     reg[34] = reg[34] + 4;
-    cout << "PC: " << convert_hex(reg[34]) << endl;
+    fout1 << "PC: " << convert_hex(reg[34]) << endl;
     return 0;
 }
 int ins_andi(char *rs , char *rt , int imm)
@@ -1085,7 +1165,7 @@ int ins_andi(char *rs , char *rt , int imm)
     int t3 = imm;
     long long temp = reg[t2];
     if(t2 == 0){
-        cout << "Write $0 Error" << endl;
+        fout2 << "In cycle " << cycle << ": " << "Write $0 Error" << endl;
         reg[t2] = 0;
     }
     if(imm < 0)
@@ -1097,12 +1177,12 @@ int ins_andi(char *rs , char *rt , int imm)
     reg[t2] = reg[t1]&imm;
     if(reg[t2] != temp){
         if(t2 < 10)
-            cout << "$0" << t2 << ": " << convert_hex(reg[t2]) << endl;
+            fout1 << "$0" << t2 << ": " << convert_hex(reg[t2]) << endl;
         else
-            cout << "$"<<t2 << ": " << convert_hex(reg[t2]) << endl;
+            fout1 << "$"<<t2 << ": " << convert_hex(reg[t2]) << endl;
     }
     reg[34] = reg[34] + 4;
-    cout << "PC: " << convert_hex(reg[34]) << endl;
+    fout1 << "PC: " << convert_hex(reg[34]) << endl;
     return 0;
 }
 int ins_ori(char *rs , char *rt , int imm)
@@ -1119,17 +1199,17 @@ int ins_ori(char *rs , char *rt , int imm)
     }
     reg[t2] = reg[t1]|imm;
     if(t2 == 0){
-        cout << "Write $0 Error" << endl;
+        fout1 << "Write $0 Error" << endl;
         reg[t2] = 0;
     }
     if(reg[t2] != temp){
         if(t2 < 10)
-            cout << "$0" << t2 << ": " << convert_hex(reg[t2]) << endl;
+            fout1 << "$0" << t2 << ": " << convert_hex(reg[t2]) << endl;
         else
-            cout << "$"<<t2 << ": " << convert_hex(reg[t2]) << endl;
+            fout1 << "$"<<t2 << ": " << convert_hex(reg[t2]) << endl;
     }
     reg[34] = reg[34] + 4;
-    cout << "PC: " << convert_hex(reg[34]) << endl;
+    fout1 << "PC: " << convert_hex(reg[34]) << endl;
     return 0;
 }
 int ins_nori(char *rs , char *rt , int imm)
@@ -1146,17 +1226,17 @@ int ins_nori(char *rs , char *rt , int imm)
     }
     reg[t2] = ~(reg[t1]|imm);
     if(t2 == 0){
-        cout << "Write $0 Error" << endl;
+        fout2 << "In cycle " << cycle << ": " << "Write $0 Error" << endl;
         reg[t2] = 0;
     }
     if(reg[t2] != temp){
         if(t2 < 10)
-            cout << "$0" << t2 << ": " << convert_hex(reg[t2]) << endl;
+            fout1 << "$0" << t2 << ": " << convert_hex(reg[t2]) << endl;
         else
-            cout << "$"<<t2 << ": " << convert_hex(reg[t2]) << endl;
+            fout1 << "$"<<t2 << ": " << convert_hex(reg[t2]) << endl;
     }
     reg[34] = reg[34] + 4;
-    cout << "PC: " << convert_hex(reg[34]) << endl;
+    fout1 << "PC: " << convert_hex(reg[34]) << endl;
     return 0;
 }
 int ins_slti(char *rs , char *rt , int imm)
@@ -1176,17 +1256,17 @@ int ins_slti(char *rs , char *rt , int imm)
     else
         reg[t2] = 0;
     if(t2 == 0){
-        cout << "Write $0 Error" << endl;
+        fout2 << "In cycle " << cycle << ": " << "Write $0 Error" << endl;
         reg[t2] = 0;
     }
     if(reg[t2] != temp){
         if(t2 < 10)
-            cout << "$0" << t2 << ": " << convert_hex(reg[t2]) << endl;
+            fout1 << "$0" << t2 << ": " << convert_hex(reg[t2]) << endl;
         else
-            cout << "$"<<t2 << ": " << convert_hex(reg[t2]) << endl;
+            fout1 << "$"<<t2 << ": " << convert_hex(reg[t2]) << endl;
     }
     reg[34] = reg[34] + 4;
-    cout << "PC: " << convert_hex(reg[34]) << endl;
+    fout1 << "PC: " << convert_hex(reg[34]) << endl;
     return 0;
 }
 int ins_beq(char *rs , char *rt , int imm) // ==
@@ -1207,13 +1287,13 @@ int ins_beq(char *rs , char *rt , int imm) // ==
     if(lock == 0)
     {
         reg[34] = reg[34] + 4 + (4*imm);
-        cout << "PC: " << convert_hex(reg[34]) << endl;
+        fout1 << "PC: " << convert_hex(reg[34]) << endl;
         return (imm);
     }
     else
     {
         reg[34] = reg[34] + 4;
-        cout << "PC: " << convert_hex(reg[34]) << endl;
+        fout1 << "PC: " << convert_hex(reg[34]) << endl;
     }
     if(lock == 1 && lock_num != 0)
         lock_num = 0;
@@ -1225,8 +1305,8 @@ int ins_bne(char *rs , char *rt , int imm) // !=
     int t2 = convert_dex(rt);
     int t3 = imm;
     long long temp = reg[t2];
-    //cout << reg[t1] << endl;
-    //cout << reg[t2] << endl;
+    //fout1 << reg[t1] << endl;
+    //fout1 << reg[t2] << endl;
     if(reg[t1] != reg[t2])
     {
         lock_num = 0;
@@ -1239,13 +1319,13 @@ int ins_bne(char *rs , char *rt , int imm) // !=
     if(lock == 0)
     {
         reg[34] = reg[34] + 4 + (4*imm);
-        cout << "PC: " << convert_hex(reg[34]) << endl;
+        fout1 << "PC: " << convert_hex(reg[34]) << endl;
         return (imm);
     }
     else
     {
         reg[34] = reg[34] + 4;
-        cout << "PC: " << convert_hex(reg[34]) << endl;
+        fout1 << "PC: " << convert_hex(reg[34]) << endl;
     }
     if(lock == 1 && lock_num != 0)
         lock_num = 0;
@@ -1267,13 +1347,13 @@ int ins_bgtz(char *rs, int imm) // !=
     if(lock == 0)
     {
         reg[34] = reg[34] + 4 + (4*imm);
-        cout << "PC: " << convert_hex(reg[34]) << endl;
+        fout1 << "PC: " << convert_hex(reg[34]) << endl;
         return imm;
     }
     else
     {
         reg[34] = reg[34] + 4;
-        cout << "PC: " << convert_hex(reg[34]) << endl;
+        fout1 << "PC: " << convert_hex(reg[34]) << endl;
     }
     if(lock == 1 && lock_num != 0)
         lock_num = 0;
@@ -1281,18 +1361,26 @@ int ins_bgtz(char *rs, int imm) // !=
 }
 int ins_j(int imm) //come back
 {
-    reg[34] = reg[34] - (4*imm);
-    cout << "PC: " << convert_hex(reg[34]) << endl;
-    return imm;
+    //fout1 << "j" << endl;
+    int next_pos = imm;
+    next_pos = (reg[34]-imm)/4;
+    reg[34] = imm;
+    fout1 << "PC: " << convert_hex(reg[34]) << endl;
+    return next_pos;
 
 }
 int ins_jal(int imm) // come back
 {
-    reg[31] = reg[34];
-    reg[34] = reg[34] + (4*imm);
-    cout << "$31: " << convert_hex(reg[31]) << endl;
-    cout << "PC: " << convert_hex(reg[34]) << endl;
-    return imm;
+    //fout1 << "jal" << endl;
+    int next_pos = 0;
+    unsigned int temp = reg[31];
+    reg[31] = reg[34]+4;
+    reg[34] = imm;
+    next_pos = (reg[34]-reg[31])/4;
+    if(temp != reg[31])
+        fout1 << "$31: " << convert_hex(reg[31]) << endl;
+    fout1 << "PC: " << convert_hex(reg[34]) << endl;
+    return next_pos;
 }
 string conver_to_decode(int label , string opcode = "" , string func = "")
 {
@@ -1361,7 +1449,8 @@ string conver_to_decode(int label , string opcode = "" , string func = "")
 }
 int main()
 {
-
+    fout1.open("snapshot.rpt");
+    fout2.open("error_dump.rpt");
     FILE* fp;
     fp = fopen("iimage.bin" , "rb");
     if (!fp)
@@ -1374,6 +1463,7 @@ int main()
         inst.push_back(buff);
 
     }
+    fclose(fp);
     vector<string >binary;
     string tempbin = "";
     for(int i = 0 ; i < inst.size() ; i++)
@@ -1399,6 +1489,7 @@ int main()
         d_bin.push_back(buff_2);
 
     }
+    fclose(fp_2);
     string tempbin_2 = "";
     for(int i = 0 ; i < d_bin.size() ; i++)
     {
@@ -1411,11 +1502,15 @@ int main()
             tempbin_2 = "";
         }
     }
+    for(int i = 0 ; i < 512 ; i++)
+    {
+        if(i >= d_mem.size())
+            d_mem.push_back(convert_bin(0));
+    }
     //vector<string > ins;
     //int* label = (int*) malloc (sizeof(int));
     // initial register
-    int cycle = 0;
-    cout << "cycle " << cycle << endl;
+    fout1 << "cycle " << cycle << endl;
     for(int i = 0 ; i < 35 ; i++)
     {
         if(i == 29)
@@ -1428,21 +1523,21 @@ int main()
     for(int i = 0 ; i < 35 ; i++)
     {
         if(i < 10)
-            cout << "$0" << i << ": " << convert_hex(reg[i]) << endl;
+            fout1 << "$0" << i << ": " << convert_hex(reg[i]) << endl;
         else if (i == 32)
-            cout << "$HI: " << convert_hex(reg[i]) << endl;
+            fout1 << "$HI: " << convert_hex(reg[i]) << endl;
         else if (i == 33)
-            cout << "$LO: " << convert_hex(reg[i]) << endl;
+            fout1 << "$LO: " << convert_hex(reg[i]) << endl;
         else if (i == 34)
-            cout << "PC: " << convert_hex(reg[i]) << endl;
+            fout1 << "PC: " << convert_hex(reg[i]) << endl;
         else
-            cout << "$" << i << ": " << convert_hex(reg[i]) << endl;
+            fout1 << "$" << i << ": " << convert_hex(reg[i]) << endl;
     }
     for(int i = 2 ; i < binary.size(); i++)
     {
 
         int data_error = 0;
-        //cout << "line = " <<(i-1) << endl;
+        //fout1 << "line = " <<(i-1) << endl;
         const string null = "";
         char* temp_bin = strdup(binary[i].c_str());
         char *opcode = new char[6]();
@@ -1450,12 +1545,15 @@ int main()
         memcpy(opcode,temp_bin,6);
         if(strcmp(opcode,"111111") == 0)
         {
+            free(opcode);
+            d_mem.clear();
+            binary.clear();
             return 0;
         }
-        cout << "cycle " << cycle << endl;
         cycle++;
-        //cout << opcode << endl;
-        //cout << "YES" << endl;
+        fout1 << "cycle " << cycle << endl;
+        //fout1 << opcode << endl;
+        //fout1 << "YES" << endl;
         if(strcmp(opcode,"000000") == 0)
         {
             //label[i] = 1;
@@ -1475,10 +1573,9 @@ int main()
             shamt[5] = '\0';
             memcpy(shamt,temp_bin+21,5);
             string ins = "";
-            //cout << func << endl;
+            //fout1 << func << endl;
             ins = conver_to_decode(1 , null , func);
-
-            //cout << ins << endl;
+            //fout1 << ins << endl;
             if(ins == "add")
                 ins_add(rs,rt,rd);
             if(ins == "addu")
@@ -1505,10 +1602,9 @@ int main()
                  ins_sra(rt,rd,shamt);
             if(ins == "jr")
             {
-                ins_jr(rs);
-                int return_block = jal_mark;
+                int return_block = ins_jr(rs);
                 jal_mark = 0;
-                i = i - jal_mark;
+                i = i - return_block - 1;
             }
             if(ins == "mult")
                  ins_mult(rs,rt);
@@ -1518,22 +1614,48 @@ int main()
                  ins_mfhi(rd);
             if(ins == "mflo")
                  ins_mflo(rd);
-            //cout << "r_type" << label[i] << endl;
+            free(func);
+            free(rs);
+            free(rt);
+            free(rd);
+            free(shamt);
+            //fout1 << "r_type" << label[i] << endl;
         }
         else if(strcmp(opcode,"000010") == 0 || strcmp(opcode,"000011") == 0) // jump
         {
             char *addrt = new char[26]();
+            addrt[26] = '\0';
             memcpy(addrt,temp_bin+6,26);
             int addr = convert_dex(addrt);
-            if(strcmp(opcode,"000011"))
+            if(strcmp(opcode,"000011")==0)
             {
-                jal_mark = ins_jal(addr);
+                char *temp_move_1 = new char[2]();
+                temp_move_1[2] = '\0';
+                memcpy(temp_move_1,temp_bin,2);
+                char *temp_move_2 = new char[24]();
+                temp_move_2[24] = '\0';
+                memcpy(temp_move_2,temp_bin+8,24);
+                char real_add[26] = {'0'};
+                strcpy(real_add, temp_move_2);
+                strcat(real_add, temp_move_1);
+                int real_addr = convert_dex(real_add);
+                jal_mark = ins_jal(real_addr);
                 i = i + jal_mark;
             }
-            else if(strcmp(opcode,"000010"))
+            else if(strcmp(opcode,"000010")==0)
             {
-                int j_re = ins_j(addr);
-                i = i - j_re;
+                char *temp_move_1 = new char[2]();
+                temp_move_1[2] = '\0';
+                memcpy(temp_move_1,temp_bin,2);
+                char *temp_move_2 = new char[24]();
+                temp_move_2[24] = '\0';
+                memcpy(temp_move_2,temp_bin+8,24);
+                char real_add[26] = {'0'};
+                strcpy(real_add, temp_move_2);
+                strcat(real_add, temp_move_1);
+                int real_addr = convert_dex(real_add);
+                jal_mark = ins_j(real_addr);
+                i = i - jal_mark-1;
             }
 
         }
@@ -1566,6 +1688,7 @@ int main()
                 imm_signed = imm_unsigned;
             string ins = "";
             ins = conver_to_decode(2 , opcode , null);
+            //fout1 << ins << endl;
             //system("PAUSE");
             if(ins == "addi")
                 ins_addi(rs,rt,imm_signed);
@@ -1613,6 +1736,12 @@ int main()
                 new_block = ins_bgtz(rs,imm_signed);
             if(new_block != 0)
                 i = i + new_block  ;
+            free(a1);
+            free(rs);
+            free(rt);
         }
+        free(opcode);
+        fout1 << endl;
+        fout1 << endl;
     }
 }
